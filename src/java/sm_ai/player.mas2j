@@ -1,0 +1,5 @@
+MAS player {
+    infrastructure: Centralised
+    environment: sm_ai.SM_Environment
+    agents: player_agent;
+}
