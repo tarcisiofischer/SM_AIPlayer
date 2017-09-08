@@ -13,10 +13,6 @@ public class FileBasedController implements Controller {
         for (int i = 0; i < _state.length; i++) {
             _state[i] = false;
         }
-
-        try{
-    	    writer = new PrintWriter("/tmp/action.txt", "UTF-8");
-		} catch (IOException e) {}
 	}
 
 	@Override
@@ -32,12 +28,18 @@ public class FileBasedController implements Controller {
 	}
 	
 	private void update_keys() {
-		for (boolean button_state : _state) {
+        try{
+    	    writer = new PrintWriter("/tmp/action.txt", "UTF-8");
+		} catch (IOException e) {}
+
+        for (boolean button_state : _state) {
 			if (button_state) {
-	    	    writer.println("1");
+	    	    writer.print("1");
 			} else {
-	    	    writer.println("0");
+	    	    writer.print("0");
 			}
 		}
+        
+        writer.close();
 	}
 }
