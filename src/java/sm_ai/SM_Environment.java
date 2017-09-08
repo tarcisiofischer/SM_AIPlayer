@@ -10,7 +10,7 @@ public class SM_Environment extends Environment {
 
     @Override
     public void init(String[] args) {
-    	_agent = new Player();
+    	_agent = new Player(this);
     }
     
     @Override
@@ -28,7 +28,9 @@ public class SM_Environment extends Environment {
         private Thread _perception_thread;
         private SM_Environment environment;
 
-    	public Player() {
+    	public Player(SM_Environment e) {
+    		environment = e;
+    		
         	_controller = new FileBasedController();
 
         	_perception_thread = new Thread(new PerceptionHandler(this));
@@ -56,11 +58,13 @@ public class SM_Environment extends Environment {
 			
 			public void run() {
 				while (true) {
-//					if (__tmp) {
-//					self.environment.addPercept(Literal.parseLiteral("something(blocking_passage)"));
-//					} else {
-//						self.environment.addPercept(Literal.parseLiteral("nothing(blocking_passage)"));
-//					}
+					self.environment.clearPercepts();
+
+					if (__tmp) {
+						self.environment.addPercept(Literal.parseLiteral("something(blocking_passage)"));
+					} else {
+						self.environment.addPercept(Literal.parseLiteral("nothing(blocking_passage)"));
+					}
 					__tmp = !__tmp;
 
 					try {
