@@ -1,21 +1,22 @@
 from scipy.misc.pilutil import imread, imshow
+import time
 
 from PIL import Image
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel
 from numba.decorators import jit
 from skimage.draw.draw import circle_perimeter
+import numba
 
 import numpy as np
 
 
 @jit(nopython=True, nogil=True, parallel=False)
-def process_pixel(full_image, img_mx, img_my, reference_img):
-    ref_xx, ref_yy = reference_img.shape[0:2]
-    ii_b = int(img_mx - ref_xx // 2)
-    ii_e = int(img_mx + ref_xx // 2 + 1)
-    jj_b = int(img_my - ref_yy // 2)
-    jj_e = int(img_my + ref_yy // 2)
+def process_pixel(full_image, reference_img, img_mx, img_my, ref_xx, ref_yy):
+    ii_b = img_mx - ref_xx // 2
+    ii_e = img_mx + ref_xx // 2 + 1
+    jj_b = img_my - ref_yy // 2
+    jj_e = img_my + ref_yy // 2
     return np.sum(np.equal(full_image[ii_b:ii_e, jj_b:jj_e], reference_img))
 
 
@@ -24,9 +25,13 @@ def search_reference_on_image(input_image, reference_image, result):
     xx, yy = input_image.shape[0:2]
     ref_xx, ref_yy = reference_image.shape[0:2]
 
-    for i in xrange(ref_xx // 2, xx - ref_xx // 2):
-        for j in xrange(ref_yy // 2, yy - ref_yy // 2):
-            result[i, j] = process_pixel(input_image, i, j, reference_image)
+    i_begin = ref_xx // 2
+    i_end = xx - i_begin
+    j_begin = ref_yy // 2
+    j_end = yy - j_begin
+    for i in numba.prange(i_begin, i_end):
+        for j in xrange(j_begin, j_end):
+            result[i, j] = process_pixel(input_image, reference_image, i, j, ref_xx, ref_yy)
 
 BINARY_THRESHOLD = 100
 last_image = None
