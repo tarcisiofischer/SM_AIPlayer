@@ -1,5 +1,4 @@
 from scipy.misc.pilutil import imread, imshow
-import time
 
 from PIL import Image
 from PyQt5 import QtGui, QtCore
@@ -21,17 +20,19 @@ def process_pixel(full_image, reference_img, img_mx, img_my, ref_xx, ref_yy):
 
 
 @jit(nopython=True, nogil=True, parallel=True)
-def search_reference_on_image(input_image, reference_image, result):
-    xx, yy = input_image.shape[0:2]
-    ref_xx, ref_yy = reference_image.shape[0:2]
+def search_reference_on_image(input_image, reference_image):
+    xx, yy = input_image.shape
+    ref_xx, ref_yy = reference_image.shape
 
     i_begin = ref_xx // 2
     i_end = xx - i_begin
     j_begin = ref_yy // 2
     j_end = yy - j_begin
+    result = np.zeros(shape=input_image.shape, dtype=np.int32)
     for i in numba.prange(i_begin, i_end):
-        for j in xrange(j_begin, j_end):
+        for j in range(j_begin, j_end):
             result[i, j] = process_pixel(input_image, reference_image, i, j, ref_xx, ref_yy)
+    return result
 
 BINARY_THRESHOLD = 100
 last_image = None
@@ -53,9 +54,7 @@ def get_mario_position(ref_img):
     binary_image[gray_image < BINARY_THRESHOLD] = False
     binary_image[gray_image >= BINARY_THRESHOLD] = True
 
-    result = np.zeros(dtype=int, shape=binary_image.shape)
-    search_reference_on_image(binary_image, ref_img, result)
-    pike_image = result
+    pike_image = search_reference_on_image(binary_image, ref_img)
 
     position = np.where(pike_image == np.max(pike_image))
     position = position[0][0], position[1][0]

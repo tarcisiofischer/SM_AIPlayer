@@ -6,7 +6,6 @@ dependencies:
   - pytest
   - scipy
   - matplotlib
-  - petsc4py
   - numba
   - pyqt
   - scikit-image
