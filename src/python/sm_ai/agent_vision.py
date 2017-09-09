@@ -36,9 +36,8 @@ def search_reference_on_image(input_image, reference_image):
 
 BINARY_THRESHOLD = 100
 last_image = None
-def get_mario_position(ref_img):
+def get_environment_snapshot():
     global last_image
-
     try:
         image = Image.open('/tmp/snapshot.ppm')
         image = np.array(image.resize((256, 256)))
@@ -49,18 +48,22 @@ def get_mario_position(ref_img):
     if image is None:
         return np.zeros(shape=(256, 256))
 
+    return image
+
+
+def get_binary_image(image):
     gray_image = np.dot(image[..., :3], [0.299, 0.587, 0.114])
     binary_image = np.zeros(shape=gray_image.shape, dtype=bool)
     binary_image[gray_image < BINARY_THRESHOLD] = False
     binary_image[gray_image >= BINARY_THRESHOLD] = True
+    return binary_image
 
+
+def get_artifact_position(binary_image, ref_img, n_artifacts=1):
     pike_image = search_reference_on_image(binary_image, ref_img)
-
     position = np.where(pike_image == np.max(pike_image))
     position = position[0][0], position[1][0]
-    image[circle_perimeter(position[0], position[1], 10)] = [255, 0, 0]
-
-    return image
+    return position
 
 app = QApplication([])
 window = QMainWindow()
@@ -72,10 +75,19 @@ pic.setGeometry(0, 0, 256, 256)
 class UpdateImageThread(QtCore.QThread):
 
     def run(self):
-        ref_img = np.array(imread('reference.ppm')[:, :, 0], dtype=np.bool)
+        mario_head_ref_img = np.array(imread('mario_head.ppm')[:, :, 0], dtype=np.bool)
+        block_ref_img = np.array(imread('block.ppm')[:, :, 0], dtype=np.bool)
+
         while True:
-            image = get_mario_position(ref_img)
-            image = QtGui.QImage(image, image.shape[1], image.shape[0], 3 * image.shape[1], QtGui.QImage.Format_RGB888)
+            env_snap = get_environment_snapshot()
+            binary_image = get_binary_image(env_snap)
+            mario_position = get_artifact_position(binary_image, mario_head_ref_img)
+            block_positions = get_artifact_position(binary_image, block_ref_img)
+
+            env_snap[circle_perimeter(mario_position[0], mario_position[1], 10)] = [255, 0, 0]
+            env_snap[circle_perimeter(block_positions[0], block_positions[1], 5)] = [0, 0, 255]
+
+            image = QtGui.QImage(env_snap, env_snap.shape[1], env_snap.shape[0], 3 * env_snap.shape[1], QtGui.QImage.Format_RGB888)
             pix = QtGui.QPixmap(image)
             pic.setPixmap(pix)
             self.msleep(100)
