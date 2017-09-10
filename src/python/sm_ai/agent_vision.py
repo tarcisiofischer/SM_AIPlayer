@@ -61,9 +61,12 @@ def get_binary_image(image):
 
 def get_artifact_position(binary_image, ref_img, n_artifacts=1):
     pike_image = search_reference_on_image(binary_image, ref_img)
-    position = np.where(pike_image == np.max(pike_image))
-    position = position[0][0], position[1][0]
-    return position
+    return np.dstack(
+        np.unravel_index(
+            np.argsort(pike_image.ravel())[::-1],
+            pike_image.shape
+        )
+    ).reshape(pike_image.size, 2)[:n_artifacts], pike_image
 
 app = QApplication([])
 window = QMainWindow()
@@ -81,15 +84,25 @@ class UpdateImageThread(QtCore.QThread):
         while True:
             env_snap = get_environment_snapshot()
             binary_image = get_binary_image(env_snap)
-            mario_position = get_artifact_position(binary_image, mario_head_ref_img)
-            block_positions = get_artifact_position(binary_image, block_ref_img)
+            mario_position, _ = get_artifact_position(binary_image, mario_head_ref_img)
+            mario_position = mario_position[0]
+            block_positions, blocks_pike_image = get_artifact_position(binary_image, block_ref_img, 5)
 
             env_snap[circle_perimeter(mario_position[0], mario_position[1], 10)] = [255, 0, 0]
-            env_snap[circle_perimeter(block_positions[0], block_positions[1], 5)] = [0, 0, 255]
+            for block_position in block_positions:
+                if blocks_pike_image[block_position[0], block_position[1]] > 230:
+                    try:
+                        env_snap[circle_perimeter(block_position[0], block_position[1], 5)] = [0, 0, 255]
+                    except:
+                        pass
 
             with open('/tmp/vision.txt', 'w') as f:
                 f.write('%s,%s\n' % (mario_position[0], mario_position[1]))
-                f.write('%s,%s' % (block_positions[0], block_positions[1]))
+                for block_position in block_positions:
+                    if blocks_pike_image[block_position[0], block_position[1]] > 230:
+                        f.write('%s,%s\n' % (block_position[0], block_position[1]))
+                    else:
+                        f.write('0,0\n')
 
             image = QtGui.QImage(env_snap, env_snap.shape[1], env_snap.shape[0], 3 * env_snap.shape[1], QtGui.QImage.Format_RGB888)
             pix = QtGui.QPixmap(image)

@@ -55,20 +55,30 @@ public class SM_Environment extends Environment {
 				self = p;
 				vision = new FileBasedVision();
 			}
-			
+
 			public void run() {
 				while (true) {
-					self.environment.clearPercepts();
-					
-					int[] mario_pos = vision.mario_position();
-					int[] block_pos = vision.block_position();
+					try {
+						self.environment.clearPercepts();
 
-					System.out.println(Math.abs(mario_pos[0] - block_pos[0]));
+						int[] mario_pos = vision.mario_position();
+						int[][] block_pos = vision.block_position();
 
-					if (Math.abs(mario_pos[0] - block_pos[0]) < 20) {
-						self.environment.addPercept(Literal.parseLiteral("something(blocking_passage)"));
-					} else {
-						self.environment.addPercept(Literal.parseLiteral("nothing(blocking_passage)"));
+						boolean has_something_blocking = false;
+						for (int i = 0; i < 5; ++i) {
+							int[] block_i_pos = block_pos[i];
+							if (Math.abs(mario_pos[0] - block_i_pos[0]) < 25) {
+								has_something_blocking = true;
+							}
+						}
+
+						if (has_something_blocking) {
+							self.environment.addPercept(Literal.parseLiteral("something(blocking_passage)"));
+						} else {
+							self.environment.addPercept(Literal.parseLiteral("nothing(blocking_passage)"));
+						}
+					} catch (NullPointerException e) {
+						System.out.println("NullPointerException");
 					}
 
 					try {
@@ -79,6 +89,5 @@ public class SM_Environment extends Environment {
 				}
 			}
 		}
-
     }
 }
