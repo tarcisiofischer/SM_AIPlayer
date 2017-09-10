@@ -49,26 +49,30 @@ public class SM_Environment extends Environment {
 
 		private class PerceptionHandler implements Runnable {
 			private Player self;
-			private boolean __tmp;
+			private Vision vision;
 			
 			public PerceptionHandler(Player p) {
 				self = p;
-				__tmp = false;
+				vision = new FileBasedVision();
 			}
 			
 			public void run() {
 				while (true) {
 					self.environment.clearPercepts();
+					
+					int[] mario_pos = vision.mario_position();
+					int[] block_pos = vision.block_position();
 
-					if (__tmp) {
+					System.out.println(Math.abs(mario_pos[0] - block_pos[0]));
+
+					if (Math.abs(mario_pos[0] - block_pos[0]) < 20) {
 						self.environment.addPercept(Literal.parseLiteral("something(blocking_passage)"));
 					} else {
 						self.environment.addPercept(Literal.parseLiteral("nothing(blocking_passage)"));
 					}
-					__tmp = !__tmp;
 
 					try {
-						Thread.sleep(1000);
+						Thread.sleep(100);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}

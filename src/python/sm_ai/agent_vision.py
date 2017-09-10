@@ -87,6 +87,10 @@ class UpdateImageThread(QtCore.QThread):
             env_snap[circle_perimeter(mario_position[0], mario_position[1], 10)] = [255, 0, 0]
             env_snap[circle_perimeter(block_positions[0], block_positions[1], 5)] = [0, 0, 255]
 
+            with open('/tmp/vision.txt', 'w') as f:
+                f.write('%s,%s\n' % (mario_position[0], mario_position[1]))
+                f.write('%s,%s' % (block_positions[0], block_positions[1]))
+
             image = QtGui.QImage(env_snap, env_snap.shape[1], env_snap.shape[0], 3 * env_snap.shape[1], QtGui.QImage.Format_RGB888)
             pix = QtGui.QPixmap(image)
             pic.setPixmap(pix)
